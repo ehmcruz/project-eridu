@@ -4,6 +4,6 @@ Teclado matricial,4,,,"10,9"
 Visor LCD 20x4 com I2C,2,"54,9",,
 Sensor temperatura DS18B2,3,44,"15,9",
 Buzzer Passivo / Módulo Transdutor - BP18,2,,"7,19",
-Kit com 40 Jumpers Macho-Fêmea,1,"8,9",,
+Kit com 40 Jumpers Macho-Fêmea,,"8,9",,
 Oxímetro,5,"34,9",,
-Frete,,"12,58","24,38","23,47"
+Frete,,"12,58",,"23,47"

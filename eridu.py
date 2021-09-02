@@ -1,5 +1,9 @@
 import csv
 import sys
+import xlsxwriter
+import itertools
+
+PRECO_INFINITO = 999999.0
 
 class orcamento_t:
 	def __init__ (self):
@@ -10,7 +14,7 @@ class orcamento_t:
 		self.precos = list()
 		self.fretes = list()
 
-	def load_csv (self, arquivo_entrada_nome):
+	def carregar_csv (self, arquivo_entrada_nome):
 		linha_i = 0
 		tem_frete = False
 
@@ -110,19 +114,112 @@ class orcamento_t:
 
 		for i in range(0, len(self.itens)):
 			if not self.qtds[i].strip():
-				self.qtds[i] = 0
+				self.qtds[i] = 0.0
 			else:
 				self.qtds[i] = float(self.qtds[i])
 			for j in range(0, len(self.precos[i])):
 				if not self.precos[i][j].strip():
-					self.precos[i][j] = 9999999
+					self.precos[i][j] = PRECO_INFINITO
 				else:
 					self.precos[i][j] = float(self.precos[i][j])
 
+		for i in range(0, len(self.fretes)):
+			if not self.fretes[i].strip():
+				self.fretes[i] = 0.0
+			else:
+				self.fretes[i] = float(self.fretes[i])
+
+		# imprime a tabela processada
 		for i in range(0, len(self.itens)):
 			print(f"{self.itens[i]}   {self.qtds[i]}   {'   '.join(str(p) for p in self.precos[i])}")
+		print(f"Frete   {'   '.join(str(p) for p in self.fretes)}")
 		
 		print(f'Processadas {linha_i} linhas.')
+
+	def calcular (self, arquivo_saida_nome):
+		book = xlsxwriter.Workbook(arquivo_saida_nome)
+		sh = book.add_worksheet("orcamento")
+
+		formato_celula_prod_faltando = book.add_format()
+		formato_celula_prod_faltando.set_font_color('red')
+
+		# escrever cabecalho base
+
+		sh.write(0, 0, "Ítem")
+		sh.write(0, 1, "Qtd.")
+
+		for i in range(0, len(self.lojas)):
+			sh.write(0, i+2, self.lojas[i])
+
+		# escrever itens
+
+		for i in range(0, len(self.itens)):
+			sh.write(i+1, 0, self.itens[i])
+			sh.write(i+1, 1, self.qtds[i])
+
+		linha_frete_xls = len(self.itens) + 1
+		linha_total_xls = linha_frete_xls + 1
+
+		sh.write(linha_frete_xls, 0, "Frete")
+
+		print(f"calculando melhor com 1 loja")
+
+		for j in range(0, len(self.lojas)):
+			total = 0
+			for i in range(0, len(self.itens)):
+				if self.precos[i][j] != PRECO_INFINITO:
+					sh.write(i+1, j+2, self.precos[i][j])
+					total += self.precos[i][j]
+				else:
+					sh.write(i+1, j+2, "Faltando", formato_celula_prod_faltando)
+			total += self.fretes[j]
+			sh.write(linha_frete_xls, j+2, self.fretes[j])
+			sh.write(linha_total_xls, j+2, total)
+
+		xlsx_col = len(self.lojas) + 2
+
+		ids_todas_lojas = list(range(0, len(self.lojas)))
+
+		for n in range(2, len(self.lojas)+1):
+			print(f"calculando melhor com {n} lojas")
+
+			for ids_lojas in itertools.combinations(ids_todas_lojas, n):
+				lojas = list()
+
+				valor_frete = 0
+				valor_total = 0
+
+				for loja in ids_lojas:
+					lojas.append(self.lojas[loja])
+					valor_frete += self.fretes[loja]
+
+				valor_total += valor_frete
+				
+				#print(total_por_loja)
+
+				sh.write(0, xlsx_col, ', '.join(lojas))
+
+				for i in range(0, len(self.itens)):
+					menor_preco_loja = ids_lojas[0]
+
+					for loja in ids_lojas:
+						if self.precos[i][loja] < self.precos[i][menor_preco_loja]:
+							menor_preco_loja = loja
+					
+					if self.precos[i][menor_preco_loja] != PRECO_INFINITO:
+						sh.write(i+1, xlsx_col, self.precos[i][menor_preco_loja])
+						valor_total += self.precos[i][menor_preco_loja]
+					else:
+						sh.write(i+1, xlsx_col, "Faltando", formato_celula_prod_faltando)
+				
+				sh.write(linha_frete_xls, xlsx_col, valor_frete)
+				sh.write(linha_total_xls, xlsx_col, valor_total)
+
+				print(lojas)
+
+				xlsx_col += 1
+
+		book.close()
 
 # ---------------------------------------------
 
@@ -136,4 +233,5 @@ arquivo_saida = sys.argv[2]
 print(f"{arquivo_entrada} -> {arquivo_saida}")
 
 orcamento = orcamento_t()
-orcamento.load_csv(arquivo_entrada)
+orcamento.carregar_csv(arquivo_entrada)
+orcamento.calcular(arquivo_saida)
