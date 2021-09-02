@@ -235,3 +235,5 @@ print(f"{arquivo_entrada} -> {arquivo_saida}")
 orcamento = orcamento_t()
 orcamento.carregar_csv(arquivo_entrada)
 orcamento.calcular(arquivo_saida)
+
+print("\nEu nao me responsabilizo pelos resultados!")
