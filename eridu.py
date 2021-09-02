@@ -224,7 +224,7 @@ class orcamento_t:
 # ---------------------------------------------
 
 if len(sys.argv) != 3:
-	print("erro!\nUso: python3 eridu.py <csv-entrada> <csv-saida>")
+	print("erro!\nUso: python3 eridu.py <csv-entrada> <xlsx-saida>")
 	exit()
 
 arquivo_entrada = sys.argv[1]
