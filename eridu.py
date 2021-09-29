@@ -161,6 +161,7 @@ class orcamento_t:
 		linha_total_xls = linha_frete_xls + 1
 
 		sh.write(linha_frete_xls, 0, "Frete")
+		sh.write(linha_total_xls, 0, "Total")
 
 		print(f"calculando melhor com 1 loja")
 
