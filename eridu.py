@@ -177,7 +177,14 @@ class orcamento_t:
 			sh.write(linha_frete_xls, j+2, self.fretes[j])
 			sh.write(linha_total_xls, j+2, total)
 
-		xlsx_col = len(self.lojas) + 2
+		xlsx_col_ini = len(self.lojas) + 2
+
+		xlsx_col = xlsx_col_ini
+
+		vmax = list()
+
+		for n in range(0, xlsx_col_ini):
+			vmax.append(PRECO_INFINITO)
 
 		ids_todas_lojas = list(range(0, len(self.lojas)))
 
@@ -199,6 +206,7 @@ class orcamento_t:
 				#print(total_por_loja)
 
 				sh.write(0, xlsx_col, ', '.join(lojas))
+				falta_prod = False
 
 				for i in range(0, len(self.itens)):
 					menor_preco_loja = ids_lojas[0]
@@ -209,16 +217,33 @@ class orcamento_t:
 					
 					if self.precos[i][menor_preco_loja] != PRECO_INFINITO:
 						sh.write(i+1, xlsx_col, self.precos[i][menor_preco_loja])
-						valor_total += self.precos[i][menor_preco_loja]
+						valor_total += self.precos[i][menor_preco_loja] * self.qtds[i]
 					else:
 						sh.write(i+1, xlsx_col, "Faltando", formato_celula_prod_faltando)
+						falta_prod = True
 				
 				sh.write(linha_frete_xls, xlsx_col, valor_frete)
 				sh.write(linha_total_xls, xlsx_col, valor_total)
 
+				if falta_prod:
+					vmax.append(PRECO_INFINITO)
+				else:
+					vmax.append(valor_total)
+
 				print(lojas)
 
 				xlsx_col += 1
+
+		menor_preco_pos = xlsx_col_ini
+
+		for c in range(xlsx_col_ini, xlsx_col):
+			if vmax[c] < vmax[menor_preco_pos]:
+				menor_preco_pos = c
+
+		formato_celula_menor_preco = book.add_format()
+		formato_celula_menor_preco.set_font_color('green')
+
+		sh.write(linha_total_xls+1, menor_preco_pos, vmax[menor_preco_pos], formato_celula_menor_preco)
 
 		book.close()
 
