@@ -139,6 +139,7 @@ class orcamento_t:
 	def calcular (self, arquivo_saida_nome):
 		book = xlsxwriter.Workbook(arquivo_saida_nome)
 		sh = book.add_worksheet("orcamento")
+		sh_melhor = book.add_worksheet("orcamento_melhor")
 
 		formato_celula_prod_faltando = book.add_format()
 		formato_celula_prod_faltando.set_font_color('red')
@@ -146,7 +147,14 @@ class orcamento_t:
 		# escrever cabecalho base
 
 		sh.write(0, 0, "Ítem")
+		sh_melhor.write(0, 0, "Ítem")
+
 		sh.write(0, 1, "Qtd.")
+		sh_melhor.write(0, 1, "Qtd.")
+
+		sh_melhor.write(0, 2, "Preço unitário")
+		sh_melhor.write(0, 3, "Preço total")
+		sh_melhor.write(0, 4, "Loja")
 
 		for i in range(0, len(self.lojas)):
 			sh.write(0, i+2, self.lojas[i])
@@ -155,13 +163,22 @@ class orcamento_t:
 
 		for i in range(0, len(self.itens)):
 			sh.write(i+1, 0, self.itens[i])
+			sh_melhor.write(i+1, 0, self.itens[i])
 			sh.write(i+1, 1, self.qtds[i])
+			sh_melhor.write(i+1, 1, self.qtds[i])
 
 		linha_frete_xls = len(self.itens) + 1
 		linha_total_xls = linha_frete_xls + 1
+		linha_total_com_frete_xls = linha_total_xls + 1
 
 		sh.write(linha_frete_xls, 0, "Frete")
-		sh.write(linha_total_xls, 0, "Total")
+		sh_melhor.write(linha_frete_xls, 0, "Frete")
+
+		sh.write(linha_total_xls, 0, "Total (produtos)")
+		sh_melhor.write(linha_total_xls, 0, "Total (produtos)")
+
+		sh_melhor.write(linha_total_com_frete_xls, 0, "Total com frete")
+		sh.write(linha_total_com_frete_xls, 0, "Total com frete")
 
 		xlsx_col_ini = 2
 
@@ -174,10 +191,14 @@ class orcamento_t:
 
 		ids_todas_lojas = list(range(0, len(self.lojas)))
 
+		n_orcamentos = 0
+
 		for n in range(1, len(self.lojas)+1):
 			print(f"calculando melhor com {n} lojas")
 
 			for ids_lojas in itertools.combinations(ids_todas_lojas, n):
+				n_orcamentos += 1
+
 				lojas = list()
 
 				valor_frete = 0
@@ -190,8 +211,6 @@ class orcamento_t:
 				print(lojas)
 
 				print(f"\tfrete: {valor_frete}")
-
-				valor_total += valor_frete
 				
 				#print(total_por_loja)
 
@@ -207,36 +226,51 @@ class orcamento_t:
 					
 					if self.precos[i][menor_preco_loja] != PRECO_INFINITO:
 						sh.write(i+1, xlsx_col, self.precos[i][menor_preco_loja])
-						valor_total += self.precos[i][menor_preco_loja] * self.qtds[i]
-						print(f"\tadicionado {self.qtds[i]} itens {self.itens[i]} de preco {self.precos[i][menor_preco_loja]}")
+						valor_total_ = self.precos[i][menor_preco_loja] * self.qtds[i]
+						valor_total += valor_total_
+						print(f"\tadicionado {self.qtds[i]} itens {self.itens[i]} de preco {self.precos[i][menor_preco_loja]} total {valor_total_}")
 					else:
 						sh.write(i+1, xlsx_col, "Faltando", formato_celula_prod_faltando)
 						falta_prod = True
+
+				valor_total_com_frete = valor_total + valor_frete
 				
 				sh.write(linha_frete_xls, xlsx_col, valor_frete)
 				sh.write(linha_total_xls, xlsx_col, valor_total)
+				sh.write(linha_total_com_frete_xls, xlsx_col, valor_total_com_frete)
 
-				print(f"\ttotal: {valor_total}")
+				print(f"\ttotal (produtos): {valor_total}")
+				print(f"\ttotal com frete: {valor_total_com_frete}")
 
 				if falta_prod:
 					vmax.append(PRECO_INFINITO)
 				else:
-					vmax.append(valor_total)
+					vmax.append(valor_total_com_frete)
 
 				xlsx_col += 1
 
-		menor_preco_pos = xlsx_col_ini
+		menor_preco_pos_xls = xlsx_col_ini
 
 		for c in range(xlsx_col_ini, xlsx_col):
-			if vmax[c] < vmax[menor_preco_pos]:
-				menor_preco_pos = c
+			if vmax[c] < vmax[menor_preco_pos_xls]:
+				menor_preco_pos_xls = c
 
-		formato_celula_menor_preco = book.add_format()
-		formato_celula_menor_preco.set_font_color('green')
+		if vmax[menor_preco_pos_xls] == PRECO_INFINITO:
+			sh.write(linha_total_com_frete_xls+1, 0, "Não é possível comprar todos os itens", formato_celula_prod_faltando)
+			sh_melhor.write(linha_total_com_frete_xls+1, 0, "Não é possível comprar todos os itens", formato_celula_prod_faltando)
+		else:
+			formato_celula_menor_preco = book.add_format()
+			formato_celula_menor_preco.set_font_color('green')
 
-		sh.write(linha_total_xls+1, menor_preco_pos, vmax[menor_preco_pos], formato_celula_menor_preco)
+			sh.write(linha_total_com_frete_xls+1, menor_preco_pos_xls, vmax[menor_preco_pos_xls], formato_celula_menor_preco)
+
+
+
+		sh.write(linha_total_com_frete_xls+3, 0, f"{n_orcamentos} combinacoes de orcamentos foram analisadas")
 
 		book.close()
+
+		print(f"{n_orcamentos} combinacoes de orcamentos foram analisadas")
 
 # ---------------------------------------------
 
