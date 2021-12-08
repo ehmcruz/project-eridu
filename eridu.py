@@ -163,21 +163,7 @@ class orcamento_t:
 		sh.write(linha_frete_xls, 0, "Frete")
 		sh.write(linha_total_xls, 0, "Total")
 
-		print(f"calculando melhor com 1 loja")
-
-		for j in range(0, len(self.lojas)):
-			total = 0
-			for i in range(0, len(self.itens)):
-				if self.precos[i][j] != PRECO_INFINITO:
-					sh.write(i+1, j+2, self.precos[i][j])
-					total += self.precos[i][j]
-				else:
-					sh.write(i+1, j+2, "Faltando", formato_celula_prod_faltando)
-			total += self.fretes[j]
-			sh.write(linha_frete_xls, j+2, self.fretes[j])
-			sh.write(linha_total_xls, j+2, total)
-
-		xlsx_col_ini = len(self.lojas) + 2
+		xlsx_col_ini = 2
 
 		xlsx_col = xlsx_col_ini
 
@@ -188,7 +174,7 @@ class orcamento_t:
 
 		ids_todas_lojas = list(range(0, len(self.lojas)))
 
-		for n in range(2, len(self.lojas)+1):
+		for n in range(1, len(self.lojas)+1):
 			print(f"calculando melhor com {n} lojas")
 
 			for ids_lojas in itertools.combinations(ids_todas_lojas, n):
@@ -200,6 +186,10 @@ class orcamento_t:
 				for loja in ids_lojas:
 					lojas.append(self.lojas[loja])
 					valor_frete += self.fretes[loja]
+
+				print(lojas)
+
+				print(f"\tfrete: {valor_frete}")
 
 				valor_total += valor_frete
 				
@@ -218,6 +208,7 @@ class orcamento_t:
 					if self.precos[i][menor_preco_loja] != PRECO_INFINITO:
 						sh.write(i+1, xlsx_col, self.precos[i][menor_preco_loja])
 						valor_total += self.precos[i][menor_preco_loja] * self.qtds[i]
+						print(f"\tadicionado {self.qtds[i]} itens {self.itens[i]} de preco {self.precos[i][menor_preco_loja]}")
 					else:
 						sh.write(i+1, xlsx_col, "Faltando", formato_celula_prod_faltando)
 						falta_prod = True
@@ -225,12 +216,12 @@ class orcamento_t:
 				sh.write(linha_frete_xls, xlsx_col, valor_frete)
 				sh.write(linha_total_xls, xlsx_col, valor_total)
 
+				print(f"\ttotal: {valor_total}")
+
 				if falta_prod:
 					vmax.append(PRECO_INFINITO)
 				else:
 					vmax.append(valor_total)
-
-				print(lojas)
 
 				xlsx_col += 1
 
