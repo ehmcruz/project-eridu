@@ -184,10 +184,13 @@ class orcamento_t:
 
 		xlsx_col = xlsx_col_ini
 
-		vmax = list()
-
-		for n in range(0, xlsx_col_ini):
-			vmax.append(PRECO_INFINITO)
+		compra_menor_preco = PRECO_INFINITO
+		menor_preco_pos_xls = -1
+		melhores_lojas_por_item = None
+		melhores_lojas = None
+		melhores_lojas_frete = PRECO_INFINITO
+		melhores_lojas_total = PRECO_INFINITO
+		melhores_lojas_total_com_frete = PRECO_INFINITO
 
 		ids_todas_lojas = list(range(0, len(self.lojas)))
 
@@ -216,6 +219,7 @@ class orcamento_t:
 
 				sh.write(0, xlsx_col, ', '.join(lojas))
 				falta_prod = False
+				melhores_lojas_por_item_ = list()
 
 				for i in range(0, len(self.itens)):
 					menor_preco_loja = ids_lojas[0]
@@ -223,6 +227,8 @@ class orcamento_t:
 					for loja in ids_lojas:
 						if self.precos[i][loja] < self.precos[i][menor_preco_loja]:
 							menor_preco_loja = loja
+
+					melhores_lojas_por_item_.append(menor_preco_loja)
 					
 					if self.precos[i][menor_preco_loja] != PRECO_INFINITO:
 						sh.write(i+1, xlsx_col, self.precos[i][menor_preco_loja])
@@ -242,29 +248,38 @@ class orcamento_t:
 				print(f"\ttotal (produtos): {valor_total}")
 				print(f"\ttotal com frete: {valor_total_com_frete}")
 
-				if falta_prod:
-					vmax.append(PRECO_INFINITO)
-				else:
-					vmax.append(valor_total_com_frete)
+				if valor_total_com_frete < compra_menor_preco and not falta_prod:
+					compra_menor_preco = valor_total_com_frete
+					menor_preco_pos_xls = xlsx_col
+					melhores_lojas_por_item = melhores_lojas_por_item_
+					melhores_lojas = lojas
+					melhores_lojas_frete = valor_frete
+					melhores_lojas_total = valor_total
+					melhores_lojas_total_com_frete = valor_total_com_frete
 
 				xlsx_col += 1
 
-		menor_preco_pos_xls = xlsx_col_ini
-
-		for c in range(xlsx_col_ini, xlsx_col):
-			if vmax[c] < vmax[menor_preco_pos_xls]:
-				menor_preco_pos_xls = c
-
-		if vmax[menor_preco_pos_xls] == PRECO_INFINITO:
+		if compra_menor_preco == PRECO_INFINITO:
 			sh.write(linha_total_com_frete_xls+1, 0, "Não é possível comprar todos os itens", formato_celula_prod_faltando)
 			sh_melhor.write(linha_total_com_frete_xls+1, 0, "Não é possível comprar todos os itens", formato_celula_prod_faltando)
 		else:
 			formato_celula_menor_preco = book.add_format()
 			formato_celula_menor_preco.set_font_color('green')
 
-			sh.write(linha_total_com_frete_xls+1, menor_preco_pos_xls, vmax[menor_preco_pos_xls], formato_celula_menor_preco)
+			sh.write(linha_total_com_frete_xls+1, menor_preco_pos_xls, compra_menor_preco, formato_celula_menor_preco)
 
+			sh_melhor.write(linha_total_com_frete_xls+2, 0, "Lojas: " + ', '.join(lojas))
 
+			i = 0
+			for loja in melhores_lojas_por_item:
+				sh_melhor.write(i+1, 2, self.precos[i][loja])
+				sh_melhor.write(i+1, 3, self.precos[i][loja] * self.qtds[i])
+				sh_melhor.write(i+1, 4, self.lojas[loja])
+				i += 1
+
+			sh_melhor.write(linha_frete_xls, 3, melhores_lojas_frete)
+			sh_melhor.write(linha_total_xls, 3, melhores_lojas_total)
+			sh_melhor.write(linha_total_com_frete_xls, 3, melhores_lojas_total_com_frete)
 
 		sh.write(linha_total_com_frete_xls+3, 0, f"{n_orcamentos} combinacoes de orcamentos foram analisadas")
 
