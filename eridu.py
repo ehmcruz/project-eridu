@@ -4,6 +4,7 @@ import xlsxwriter
 import itertools
 
 PRECO_INFINITO = 999999.0
+NUMA_MAX_LOJAS_CFG = 99999
 
 class orcamento_t:
 	def __init__ (self):
@@ -196,7 +197,12 @@ class orcamento_t:
 
 		n_orcamentos = 0
 
-		for n in range(1, len(self.lojas)+1):
+		num_max_lojas = len(self.lojas)+1
+
+		if num_max_lojas > NUMA_MAX_LOJAS_CFG:
+			num_max_lojas = NUMA_MAX_LOJAS_CFG
+
+		for n in range(1, num_max_lojas):
 			print(f"calculando melhor com {n} lojas")
 
 			for ids_lojas in itertools.combinations(ids_todas_lojas, n):
@@ -268,7 +274,7 @@ class orcamento_t:
 
 			sh.write(linha_total_com_frete_xls+1, menor_preco_pos_xls, compra_menor_preco, formato_celula_menor_preco)
 
-			sh_melhor.write(linha_total_com_frete_xls+2, 0, "Lojas: " + ', '.join(lojas))
+			sh_melhor.write(linha_total_com_frete_xls+2, 0, "Lojas: " + ', '.join(melhores_lojas))
 
 			i = 0
 			for loja in melhores_lojas_por_item:
@@ -289,9 +295,12 @@ class orcamento_t:
 
 # ---------------------------------------------
 
-if len(sys.argv) != 3:
-	print("erro!\nUso: python3 eridu.py <csv-entrada> <xlsx-saida>")
+if len(sys.argv) != 3 and len(sys.argv) != 4:
+	print("erro!\nUso: python3 eridu.py <csv-entrada> <xlsx-saida> [num_max_de_lojas]")
 	exit()
+
+if len(sys.argv) == 4:
+	NUMA_MAX_LOJAS_CFG = int(sys.argv[3]) + 1
 
 arquivo_entrada = sys.argv[1]
 arquivo_saida = sys.argv[2]
